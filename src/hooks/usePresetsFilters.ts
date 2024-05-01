@@ -1,7 +1,6 @@
 import { useRouter } from "next/router";
 import { shake } from "radash";
-import { useState } from "react";
-import { set } from "zod";
+import { useEffect, useState } from "react";
 
 interface Filter {
   search: string;
@@ -11,19 +10,34 @@ interface Filter {
 
 export const usePresetsFilters = () => {
   const router = useRouter();
-
+  const [isRouterReady, setIsRouterReady] = useState(false);
   const [filter, setFilter] = useState<Filter>({
-    search: router.query.search?.toString() ?? "",
-    modelId: router.query.modelId?.toString() ?? "all",
-    userId: router.query.userId?.toString() ?? "all",
+    search: "",
+    modelId: "all",
+    userId: "all",
   });
+
+  useEffect(() => {
+    if (router.isReady) {
+      setIsRouterReady(true);
+      setFilter({
+        search: router.query.search?.toString() ?? "",
+        modelId: router.query.modelId?.toString() ?? "all",
+        userId: router.query.userId?.toString() ?? "all",
+      });
+    }
+  }, [router.isReady, router.query]);
 
   const setFilterWithQueryParam = (callback: (oldValue: Filter) => Filter) => {
     setFilter((currentValue) => {
       const newValue = callback(currentValue);
-      router.replace({
-        query: shake(newValue, (value) => !value || value === "all"),
-      });
+
+      if (isRouterReady) {
+        router.replace({
+          query: shake(newValue, (value) => !value || value === "all"),
+        });
+      }
+
       return newValue;
     });
   };
